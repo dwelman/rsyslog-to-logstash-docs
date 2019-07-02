@@ -1,0 +1,78 @@
+version: '3.1'
+
+services:
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.2.0
+    container_name: elasticsearch
+    environment:
+#      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.type=single-node"
+    volumes:
+      - esdata1:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+      - 9300:9300
+    networks:
+      - esnet
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.2.0
+    container_name: kibana
+    ports:
+      - 5601:5601
+    networks:
+      - esnet
+
+  zookeeper:
+    image: 'confluent/zookeeper:latest'
+    ports:
+      - "2181:2181"
+    networks:
+      - esnet
+
+  kafka:
+    image: 'confluent/kafka:latest'
+    ports:
+      - "9092:9092"
+    networks:
+      - esnet
+
+  schemareg:
+    image: 'confluent/schema-registry:latest'
+    ports:
+      - "8081:8081"
+    networks:
+      - esnet
+
+  rest-proxy:
+    image: 'confluent/rest-proxy:latest'
+    ports:
+      - "8082:8082"
+    networks:
+      - esnet
+
+  kafka-topics-ui:
+    image: 'landoop/kafka-topics-ui:latest'
+    ports:
+      - "8000:8000"
+    environment:
+      - "KAFKA_REST_PROXY_URL=http://rest-proxy:8082"
+      - "PROXY=true"
+    networks:
+      - esnet
+
+  logstash:
+    image: 'docker.elastic.co/logstash/logstash:7.2.0'
+    container_name: logstash
+    volumes:
+      - ./pipeline/:/usr/share/logstash/pipeline/
+    networks:
+      - esnet
+
+volumes:
+  esdata1:
+    driver: local
+
+networks:
+  esnet:

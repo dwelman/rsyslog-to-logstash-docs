@@ -14,42 +14,26 @@ rsyslog is a logging utility found on most linux distributions, including z-linu
 The following line is required to enable rsyslog to monitor external files for updates:
 
 ./etc/rsyslog.conf
-[soure, config]
 ---------------
 module(load="imfile" mode="inotify")
 ---------------
 
 "inotify" is always preferable to polling and should always be used unless bugs are encountered with it.
 
+---------------
+module(load="imfile" mode="polling" PollingInterval=10)
+---------------
+
+As mentioned "inotify" is preferable, as PollingInterval is obsolete and legacy.
+
 Next, create a config file for the specific file to be monitored, this will also contain the config information necessary to send the tailed logs to the Logstash server. 
 
-./etc/rsyslog.d/filename.conf
+../rsyslog/tcp-out.conf
 --------------
-    input(type="imfile"
-        File="/var/log/logfile_name.log"
-        Tag="logfile-name-tag"
-        PersistStateInterval="1000"
-        ReadMode="0"
-        AddMetaData="on"
-        ReopenOnTruncate="on"
-        TrimLineOverBytes="0"
-        FreshStartTail="on"
-    )
-    template(name="ForwardFormat" type="list") {
-        property(name="msg" spifno1stsp="on" )
-        property(name="msg")
-    }
-    if $programname == logfile-name-tag' then {
-    action(
-            type="omfwd"
-            Target="server address/ip"
-            Port="logstash listening port"
-            Protocol="tcp"
-            Template="ForwardFormat"
-        )
-        stop
-    }
+include::rsyslog/tcp-out.conf[]
 --------------
+
+This file should be saved under "/etc/rsyslog.d/tcp-out.conf"
 
 Once the following config files have been updated and created, the following command can be run to ensure that the added config is valid and is free of syntax errors:
 --------
@@ -66,25 +50,17 @@ Logstash is a part of the ELK stack that acts as log storage for Elastic Search.
 
 In the folder that the pipelines are found for Logstash, for example "/pipeline" on a docker container, add a new config file with the following config details in it:
 
-./pipeline/tcp-input.conf
 -----
     input {
         tcp {
             port => XXXX
         }
     }
-    output {
-        stdout {
-            codec => rubydebug
-        }
-    }
 -----
 
 Set the port for the TCP input to whatever port is being used as per setup, the default is '5044'.
 
-As for output the current setup will print straight to stdout which allows for debugging to ensure everything is working, this can later be updated to pipe the logs to Elastic or configured for any other purposes.
-
-Finally, this is the Grok pattern that can be used to configure a log from IBM Websphere:
+This is the Grok pattern that can be used to configure a log from IBM Websphere:
 
 -----
     filter {
@@ -110,12 +86,23 @@ This filter can be added to the above Logstash config file in the following form
     }
 -----
 
+This brings us to the final complete file:
+
+../pipeline/logstash.conf
+-------
+include::logstash/logstash.conf[]
+-------
+
+As for output the current setup will print straight to stdout which allows for debugging to ensure everything is working, this can later be updated to pipe the logs to Elastic or configured for any other purposes.
+
 === Testing
 
-To test the whole setup, on the machine that is running the modified rsyslog the following command can be run:
+A complete test environment can be set up with docker-compose, and the entire stack will work by piping logs into Logstash. Using the provided docker-compose file:
 
+../docker-compose.yml
+[source, yaml]
 -----
-    echo "Test" | nc SERVER_ADDRESS LOGSTASH_PORT
+include::docker-compose.yml[]
 -----
 
-If all is working, the logstash instance will receive a message of "Test"
+The way this stack is composed it will work as configured, with logstash talking to elasticsearch talking to kibana. All that needs to be done on the machine scanning and sending the logs is to replace the IP in the above rsyslog config file with the IP address of the logstash container. Once this has been configured, piping log lines to the monitored log file will kick off the process.
