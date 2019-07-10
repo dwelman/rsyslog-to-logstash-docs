@@ -106,3 +106,5 @@ include::docker-compose.yml[]
 -----
 
 The way this stack is composed it will work as configured, with logstash talking to elasticsearch talking to kibana. All that needs to be done on the machine scanning and sending the logs is to replace the IP in the above rsyslog config file with the IP address of the logstash container. Once this has been configured, piping log lines to the monitored log file will kick off the process.
+
+To ensure logs are being picked up and sent through to logstash and elastic, the Kibana dashboard can be viewed on the port as configured in the docker-compose.yml

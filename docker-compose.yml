@@ -70,6 +70,24 @@ services:
     networks:
       - esnet
 
+  was9:
+    image: 'ibmcom/websphere-traditional:latest'
+          #image: "was9:nedj-3.1"
+    container_name: was9
+    hostname: was9
+    privileged: true
+    #user: root
+    ports:
+      - "9043:9043"
+      - "9443:9443"
+      - "9080:9080"
+      - "7777:7777"
+    volumes:
+      - ./sharedlibs:/opt/IBM/WebSphere/nedj/sharedLibs:rw
+      - ./logs:/opt/IBM/WebSphere/AppServer/profiles/AppSrv01/logs:rw
+    networks:
+      - esnet
+
 volumes:
   esdata1:
     driver: local
